@@ -69,6 +69,11 @@ char *get_name(t_storage *s, int a, int i)
 	//printf("%d\n", a);
 	if (s->arg[a][i] == '>')
 		i++;
+	if (s->arg[a][i] == '\0')
+	{
+		a++;
+		i = 0;
+	}
 	int tmp = i;
 	while (s->arg[a][i] && s->arg[a][i] != '>' && s->arg[a][i] != '<')
 	{
@@ -114,7 +119,7 @@ int		create_files(t_storage *s)
 	int a = 1;
 	int i = 0;
 	int k = 0;
-	while (a < s->paramc)
+	while (s->arg[a])
 	{
 		while (s->arg[a][i])
 		{
@@ -131,29 +136,42 @@ int		create_files(t_storage *s)
 	return (0);
 }
 
-int	do_redirection(t_storage *s)
+int	do_redirection(t_storage *s, char c)
 {
-	int a = s->paramc - 1;
+	int a = 0;
 	int i = 0;
 	int k = 0;
 	int fd = 0;
+	while (s->arg[a])
+		a++;
+	a--;
 	while (a > 0 && k == 0)
 	{
 		i = ft_strlen(s->arg[a]);
+		printf("%s\n", s->arg[a]);
 		while (i > 0 && k == 0)
 		{
-			if (s->arg[a][i] == '<' || s->arg[a][i] == '>')
+			if (s->arg[a][i] == c)
 				k = 1;
 			i--;
 		}
 		if (k == 0)
 			a--;
 	}
-	create_files(s);
+	create_files(s);;
+	if (c == '<')
+		fd = open(get_name(s, a, i + 1), O_RDONLY,S_IRWXU);
+	else
+	{
 	if (s->arg[a][i + 2] == '>')
 		fd = open(get_name(s, a, i + 1), O_RDWR | O_CREAT | O_APPEND,S_IRWXU);
 	else
+	{
+		//printf("%d\n", i);
+		//printf("%s\n", get_name(s, a, i + 1));
 		fd = open(get_name(s, a, i + 1), O_RDWR | O_CREAT | O_TRUNC,S_IRWXU);
+	}
+	}
 	return (fd);
 }
 
@@ -171,21 +189,33 @@ void	ft_putstr_fd_exep(char *str, int fd)
 	}
 }
 
+int	check_fd(t_storage *s)
+{
+	int c = (s->current * 2) - 1;
+	int fd = 0;
+	if (s->out == 1)
+		fd = 1;
+	if (s->out == 3)
+		fd = s->fd;
+	if (s->out == 2)
+		fd = s->pipefd[c + 2];
+}
+
 int print_echo(t_storage *s, char *cmd)
 {
 	int i = 1;
 	int fd = 1;
-	if (is_redirection(s))
-		fd = do_redirection(s);
-	if (s->paramc == 1)
+	int pid;
+	fd = check_fd(s);
+	if (s->arg_count == 1 || s->in == 3)
 	{
-		write(fd, "\n", 1);
+		write(1, "\n", 1);
 		return (1);
 	}
 	i = 1;
 	if (ft_strncmp(s->arg[1], "-n", ft_strlen(s->arg[1])) == 0)
 		i = 2;
-	while (i < s->paramc)
+	while (i < s->arg_count)
 	{
 		ft_putstr_fd_exep(s->arg[i], fd);
 		i++;
@@ -194,6 +224,7 @@ int print_echo(t_storage *s, char *cmd)
 	}
 	if (ft_strncmp(s->arg[1], "-n", ft_strlen(s->arg[1])) == 0)
 		return (1);
-	write(fd, "\n", 1);
+	//write(fd, "\n", 1);
+//	}
 	return (1);
 }

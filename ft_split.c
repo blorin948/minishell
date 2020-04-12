@@ -12,6 +12,18 @@ char    **ft_free(char **tab, int a)
         return (0);
 }
 
+int		ft_strchr2(char *s, char c)
+{
+	int i = 0;
+	int a = 0;
+	while (s[i])
+	{
+		if (s[i] == c)
+			return (1);
+		i++;
+	}
+	return (0);
+}
 
 int	is_accent(int i, char const *s, int *size)
 {
@@ -33,7 +45,7 @@ int	is_accent(int i, char const *s, int *size)
 		i++;
 		count++;
 	}
-	if (count % 2 == 1)//(s[i] == '"' || s[i] == 39 && (count % 2 == 1))
+	if (count % 2 == 1)
 					over = 0;
 				else
 					over = 1;
@@ -41,7 +53,7 @@ int	is_accent(int i, char const *s, int *size)
 	return (i);
 }
 
-char    **ft_tab(char const *s, char c, char **tab, int i, int a)
+char    **ft_tab(char const *s, char *c, char **tab, int i, int a)
 {
    	int over = 0;
 	   int count = 0;
@@ -71,7 +83,7 @@ char    **ft_tab(char const *s, char c, char **tab, int i, int a)
 			}
 		over = 0;
 		}
-		if (s[i] == c || s[i] == '\0')
+		if (ft_strchr2(c, s[i]) || s[i] == '\0')
 		{
 			tab[a][k] = '\0';
 			return (tab);
@@ -83,44 +95,47 @@ char    **ft_tab(char const *s, char c, char **tab, int i, int a)
 }
 
 
-int		is_last(char const *s, int i, char c)
+int		is_last(char const *s, int i, char *c)
 {
 	while (s[i] != '\0')
 	{
-		if (s[i] != '"' && s[i] != c && s[i] != 39)
+		if (s[i] != '"' && (ft_strchr2(c, s[i]) == 0) && s[i] != 39)
 			return (1);
 		i++;
 	}
 	return (0);
 }
-int             size(char const *s, char c)
+int             size(char const *s, char *c)
 {
         int size;
         int i;
 
         i = 0;
         size = 0;
-        if (s[0] != '\0' && s[0] != c)
+        if (s[0] != '\0' && (!ft_strchr(c, s[i])))
                 size = 1;
-        while (s[i] == c)
+        while (s[i] == ' ')
                 i++;
         while (s[i] != '\0')
         {
 			i = is_accent(i, s, &size);
-                if (s[i] == c)
+			if (s[i] == '|')
+				size++;
+                if (ft_strchr2(c, s[i]))
                 {
 					if (is_last(s, i, c) > 0)
                         	size++;
-                        while (s[i] == c && s[i + 1] != 39 && s[i + 1] != '"')
+                        while (s[i] == ' ' && s[i + 1] != 39 && s[i + 1] != '"')
                                 i++;
                 }
                 if (s)
                         i++;
         }
+	//	printf("%d\n", size);
         return (size);
 }
 
-int		size_str(char const *s, int i, char c, int *k)
+int		size_str(char const *s, int i, char *c, int *k, int *test)
 {
 	int over = 0;
 	int count = 0;
@@ -153,7 +168,12 @@ int		size_str(char const *s, int i, char c, int *k)
 		*k = *k + 1;
 		over = 0;
 		}
-		if (s[i] == c || s[i] == '\0')
+		if (s[i] == '|')
+		{
+			*test = 1;
+			return (i);
+		}
+		if (ft_strchr2(c, s[i]) || s[i] == '\0')
 			return (i);
 		else
 		{
@@ -164,13 +184,15 @@ int		size_str(char const *s, int i, char c, int *k)
 	return (i);
 
 }
-char    **ft_split(char const *s, char c, t_storage *stru)
+
+char    **ft_split(char const *s, char *c, t_storage *stru)
 {
         char    **tab;
         int             k;
         int             i;
         int             a;
 		int tmp = 0;
+		int test = 0;
 
         i = 0;
         k = 0;
@@ -178,20 +200,37 @@ char    **ft_split(char const *s, char c, t_storage *stru)
         if (!(tab = malloc(sizeof(char *) * (size(s, c) + 1))))
                 return (0);
 		stru->paramc = size(s, c);
-        while (s[i] == c && s[i] != '\0')
+        while (ft_strchr2(c, s[i]) && s[i] != '\0')
                 i++;
         while (s[i] != '\0')
         {
 			tmp = i;
-			i = size_str(s, i, c, &k);
-			//printf("nbr = %d\n", k);
-             if (!(tab[a] = malloc(sizeof(char) * (k +1 ))))
+			i = size_str(s, i, c, &k, &test);
+             if (!(tab[a] = malloc(sizeof(char) * (k +2))))
                  return (ft_free(tab, a));
 			ft_tab(s, c, tab, tmp, a);
+			if (test == 1)
+			{
+				if (!(tab[++a] = malloc(sizeof(char) * (2))))
+                 	return (ft_free(tab, a));
+				tab[a][0] = '|';
+				tab[a][1] = '\0';
+			}
 			a++;
             k = 0;
-            while (s[i] == c)
+			test = 0;
+            while (ft_strchr2(c, s[i]))
+			{
+				if (s[i] == '|' && s[i - 1] == ' ')
+				{
+				if (!(tab[a] = malloc(sizeof(char) * (2))))
+                 	return (ft_free(tab, a));
+				tab[a][0] = '|';
+				tab[a][1] = '\0';
+				a++;
+				}
                 i++;
+			}
         }
 		tab[a] = 0;
         return (tab);
